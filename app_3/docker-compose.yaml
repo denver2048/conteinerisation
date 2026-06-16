@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:${TAG}
+    container_name: postgres_db
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASS}
+      POSTGRES_DB: ${DB_NAME}
+    networks:
+      - backend_net
+    ports:
+      - "127.0.0.1:${DB_PORT}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  web:
+    build: .
+    container_name: hw
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+    read_only: true
+    networks:
+      - backend_net
+      - public_net
+    security_opt:
+      - no-new-privileges:true
+    restart: on-failure
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - DB_HOST=postgres_db
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASS=${DB_PASS}
+    ports:
+      - "8000:8000"
+
+volumes:
+  postgres_data:
+
+networks:
+  public_net:
+    driver: bridge
+  backend_net:
+    internal: true
