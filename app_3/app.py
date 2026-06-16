@@ -24,6 +24,11 @@ def read_root():
     return {"message": "Hello from Docker Compose 🚀"}
 
 
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+
 @app.get("/db")
 def read_db():
     conn = get_connection()
